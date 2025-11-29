@@ -1,5 +1,6 @@
 # 2048-Python-GAME
-Simple 2048 game built in Python (terminal version).
+Simple 2048 game built in Python (terminal version). 
+Made by Syakira Reynamahira, Shaville Santana and Elara Avalokita Susilo from X1
 # 2048 Python Game (Console Version)
 
 This is a simple implementation of the classic **2048 Game**, created using **pure Python** without any external libraries such as Pygame.  
