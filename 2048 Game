@@ -1,1 +1,160 @@
 
+import random
+
+BOARD_SIZE = 4  # 4x4 board
+
+def init_board():
+    """Buat papan 4x4 dan tambahkan 2 tile awal."""
+    board = [[0] * BOARD_SIZE for _ in range(BOARD_SIZE)]
+    board = add_random_tile(board)
+    board = add_random_tile(board)
+    return board
+
+def add_random_tile(board):
+    """Menambahkan tile 2 atau 4 di posisi kosong secara acak."""
+    empty_cells = [(r, c) for r in range(BOARD_SIZE) for c in range(BOARD_SIZE) if board[r][c] == 0]
+    if not empty_cells:
+        return board
+
+    r, c = random.choice(empty_cells)
+    # 90% tile 2, 10% tile 4
+    board[r][c] = 4 if random.random() < 0.1 else 2
+    return board
+
+def move_row_left(row):
+    """Geser satu baris ke kiri + gabung tile yang sama. Return (baris baru, skor tambahan)."""
+    # buang nol dulu
+    new_row = [x for x in row if x != 0]
+    score_gain = 0
+    i = 0
+    while i < len(new_row) - 1:
+        if new_row[i] == new_row[i + 1]:
+            new_row[i] *= 2
+            score_gain += new_row[i]
+            new_row.pop(i + 1)
+            i += 1
+        else:
+            i += 1
+    # tambahkan nol di kanan sampai panjang 4
+    new_row += [0] * (BOARD_SIZE - len(new_row))
+    return new_row, score_gain
+
+def move_left(board):
+    """Geser seluruh papan ke kiri."""
+    moved = False
+    total_gain = 0
+    new_board = []
+    for row in board:
+        new_row, gain = move_row_left(row)
+        if new_row != row:
+            moved = True
+        total_gain += gain
+        new_board.append(new_row)
+    return new_board, moved, total_gain
+
+def rotate_board_clockwise(board):
+    """Rotasi papan searah jarum jam (clockwise)."""
+    return [list(row) for row in zip(*board[::-1])]
+
+def move(board, direction):
+    """
+    Gerak papan sesuai input:
+    'w' = up, 'a' = left, 's' = down, 'd' = right
+    """
+    rotations = {'a': 0, 'w': 1, 'd': 2, 's': 3}
+    if direction not in rotations:
+        return board, False, 0
+
+    k = rotations[direction]
+    b = board
+
+    # rotasi supaya semua gerakan jadi 'left'
+    for _ in range(k):
+        b = rotate_board_clockwise(b)
+
+    # lakukan gerakan ke kiri
+    moved_board, moved, gain = move_left(b)
+
+    # rotasi balik ke posisi semula
+    for _ in range((4 - k) % 4):
+        moved_board = rotate_board_clockwise(moved_board)
+
+    return moved_board, moved, gain
+
+def can_move(board):
+    """Cek apakah masih bisa gerak (ada kosong atau ada dua tile yang sama berdampingan)."""
+    # ada yang kosong?
+    for r in range(BOARD_SIZE):
+        for c in range(BOARD_SIZE):
+            if board[r][c] == 0:
+                return True
+
+    # ada yang sama berdampingan?
+    for r in range(BOARD_SIZE):
+        for c in range(BOARD_SIZE):
+            if c + 1 < BOARD_SIZE and board[r][c] == board[r][c + 1] != 0:
+                return True
+            if r + 1 < BOARD_SIZE and board[r][c] == board[r + 1][c] != 0:
+                return True
+
+    return False
+
+def has_2048(board):
+    """Cek apakah sudah mencapai 2048."""
+    return any(board[r][c] >= 2048 for r in range(BOARD_SIZE) for c in range(BOARD_SIZE))
+
+def print_board(board, score):
+    """Tampilkan papan di terminal."""
+    print("+----" * BOARD_SIZE + "+")
+    print(f"Score: {score}")
+    print("+----" * BOARD_SIZE + "+")
+    for row in board:
+        line = ""
+        for val in row:
+            if val == 0:
+                line += "|    "
+            else:
+                line += f"|{val:4}"
+        line += "|"
+        print(line)
+        print("+----" * BOARD_SIZE + "+")
+
+def play():
+    """Main loop game 2048."""
+    board = init_board()
+    score = 0
+
+    print("=== GAME 2048 (Python Console) ===")
+    print("Kontrol: W = atas, A = kiri, S = bawah, D = kanan, Q = keluar\n")
+
+    while True:
+        print_board(board, score)
+
+        if has_2048(board):
+            print("Kamu mencapai 2048! Kamu menang! 🎉")
+            break
+
+        if not can_move(board):
+            print("Tidak ada langkah lagi. Game over! 💀")
+            break
+
+        move_char = input("Gerak (W/A/S/D), Q untuk keluar: ").lower().strip()
+
+        if move_char == 'q':
+            print("Terima kasih sudah bermain!")
+            break
+
+        if move_char not in ['w', 'a', 's', 'd']:
+            print("Input tidak valid. Pakai W/A/S/D atau Q.")
+            continue
+
+        new_board, moved, gain = move(board, move_char)
+        if not moved:
+            print("Papan tidak berubah, coba arah lain.")
+            continue
+
+        board = add_random_tile(new_board)
+        score += gain
+
+if __name__ == "__main__":
+    play()
